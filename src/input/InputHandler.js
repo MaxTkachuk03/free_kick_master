@@ -19,6 +19,7 @@ export class InputHandler {
     this.isAiming = false;
     this.kickStartPosition = null;
     this.kickEndPosition = null;
+    this.kickStartTime = null; // Track time for swipe speed calculation
     this.trajectoryPreview = null;
     this.pendingKickParams = null; // Store kick params until animation completes
     
@@ -68,40 +69,89 @@ export class InputHandler {
 
   /**
    * Calculate kick direction and power from mouse position
-   * Similar to Indoor Soccer - direction is always forward (towards goal), mouse position determines angle and power
+   * Direction is always towards goal (positive Z), mouse position determines horizontal angle
+   * Swipe speed determines ball height - faster swipe = higher flight
    */
-  calculateKickParameters(mouseWorldPos, ballPosition) {
-    // Goal is at z = 25, ball is on opponent's half (z > 0)
-    // Direction should always go forward (towards goal), mouse position determines horizontal angle
+  calculateKickParameters(mouseWorldPos, ballPosition, swipeSpeed = 0) {
+    // Calculate direction vector from ball to mouse position
+    // This is the swipe direction - ball should fly in this exact direction
+    const swipeDirection = new THREE.Vector3()
+      .subVectors(mouseWorldPos, ballPosition);
     
-    // Calculate horizontal offset from ball to mouse (X axis)
-    const horizontalOffset = mouseWorldPos.x - ballPosition.x;
-    
-    // Calculate forward direction (always towards goal at z=25)
-    const goalZ = 25;
-    const forwardDistance = goalZ - ballPosition.z;
-    
-    // Create direction vector: forward (Z) with horizontal angle (X) from mouse position
-    // Normalize to ensure consistent speed
-    const direction = new THREE.Vector3(
-      horizontalOffset * 0.3, // Horizontal angle (reduced for more control)
-      0, // Will be set in GameLogic for upward component
-      Math.max(forwardDistance, 1) // Always forward
-    ).normalize();
-    
-    // Power based on distance from ball to mouse (clamped to reasonable range)
-    const distance = mouseWorldPos.distanceTo(ballPosition);
-    const maxDistance = 30; // Maximum kick distance
+    // Calculate power based on swipe distance
+    const distance = swipeDirection.length();
+    const maxDistance = 20; // Maximum kick distance
     const power = Math.min(distance / maxDistance, 1.0);
     
     // Ensure minimum power
     const minPower = 0.3;
     const finalPower = Math.max(power, minPower);
     
+    // Store original components before any adjustments
+    // These represent the exact angles of the swipe
+    const originalX = swipeDirection.x;
+    const originalY = swipeDirection.y;
+    const originalZ = swipeDirection.z;
+    const originalLength = swipeDirection.length();
+    
+    // Normalize to get direction
+    swipeDirection.normalize();
+    
+    // Preserve the exact horizontal (X) and vertical (Y) direction from swipe
+    // Only adjust Z component to ensure forward movement towards goal (z=25)
+    // The X component determines left/right direction - preserve it exactly
+    // The Y component determines up/down direction - preserve it exactly
+    
+    // If swipe goes backwards (negative Z), we need to flip it forward
+    // But keep X and Y exactly as swiped
+    if (swipeDirection.z < 0) {
+      // Calculate the horizontal/vertical magnitude (X and Y combined)
+      const horizontalVerticalMag = Math.sqrt(originalX * originalX + originalY * originalY);
+      const forwardMag = Math.abs(originalZ);
+      
+      // If there's horizontal/vertical component, preserve it exactly
+      if (horizontalVerticalMag > 0.001) {
+        // Normalize X and Y to preserve their ratio
+        swipeDirection.x = originalX / horizontalVerticalMag;
+        swipeDirection.y = originalY / horizontalVerticalMag;
+        // Set Z to forward, scaled to maintain unit vector
+        const totalMag = Math.sqrt(horizontalVerticalMag * horizontalVerticalMag + forwardMag * forwardMag);
+        swipeDirection.z = forwardMag / totalMag;
+        // Re-normalize X and Y to maintain unit vector
+        const scale = Math.sqrt(1 - swipeDirection.z * swipeDirection.z) / Math.sqrt(swipeDirection.x * swipeDirection.x + swipeDirection.y * swipeDirection.y);
+        swipeDirection.x *= scale;
+        swipeDirection.y *= scale;
+      } else {
+        // No horizontal component, just flip Z
+        swipeDirection.z = Math.abs(swipeDirection.z);
+        swipeDirection.normalize();
+      }
+    }
+    
+    // Ensure minimum forward component (always towards goal)
+    // But preserve X and Y components exactly as swiped
+    if (swipeDirection.z < 0.1) {
+      // Calculate horizontal/vertical magnitude
+      const horizontalVerticalMag = Math.sqrt(swipeDirection.x * swipeDirection.x + swipeDirection.y * swipeDirection.y);
+      
+      if (horizontalVerticalMag > 0.001) {
+        // Preserve X and Y ratio, scale them down to make room for minimum Z
+        const scale = Math.sqrt(1 - 0.1 * 0.1) / horizontalVerticalMag;
+        swipeDirection.x *= scale;
+        swipeDirection.y *= scale;
+        swipeDirection.z = 0.1;
+      } else {
+        // No horizontal component, just set minimum Z
+        swipeDirection.z = 0.1;
+        swipeDirection.normalize();
+      }
+    }
+    
     return {
-      direction: direction,
-      power: finalPower,
-      distance: distance
+      direction: swipeDirection, // Normalized direction vector (preserves exact swipe angles)
+      power: finalPower,         // Power from 0.3 to 1.0 based on swipe distance
+      distance: distance,        // Raw distance
+      swipeSpeed: swipeSpeed     // Swipe speed (0-2.0) for height control
     };
   }
 
@@ -119,8 +169,8 @@ export class InputHandler {
     const mouseWorldPos = this.getMouseWorldPosition(event, ballPosition);
     this.kickEndPosition = mouseWorldPos;
     
-    // Calculate kick parameters
-    const params = this.calculateKickParameters(mouseWorldPos, ballPosition);
+    // Calculate kick parameters (no swipe speed during move, only on mouse up)
+    const params = this.calculateKickParameters(mouseWorldPos, ballPosition, 0);
     
     // Don't show trajectory preview - removed for better gameplay
     // Call update callback if set
@@ -130,21 +180,18 @@ export class InputHandler {
   }
 
   /**
-   * Handle mouse down - start aiming and player animation
+   * Handle mouse down - start aiming (no animation delay)
    */
   onMouseDown(event) {
     if (event.button !== 0) return; // Only left mouse button
     
     // Get ball position from ball object
-    const ballPosition = this.ball ? this.ball.getPosition() : new THREE.Vector3(0, 0.2, -25);
+    const ballPosition = this.ball ? this.ball.getPosition() : new THREE.Vector3(0, 0.2, 5);
     this.kickStartPosition = ballPosition.clone();
+    this.kickStartTime = performance.now(); // Track start time for swipe speed
     this.isAiming = true;
     
-    // Start player run-up and swing animation
-    if (this.player) {
-      this.player.startKickAnimation();
-    }
-    
+    // No player animation - immediate kick on mouse up
     // Call start callback if set
     if (this.onAimStartCallback) {
       this.onAimStartCallback();
@@ -152,40 +199,48 @@ export class InputHandler {
   }
 
   /**
-   * Handle mouse up - store kick params, execute after animation
+   * Handle mouse up - execute kick immediately (one swipe = one kick)
    */
   onMouseUp(event) {
     if (event.button !== 0 || !this.isAiming) return;
     
     this.isAiming = false;
     
-    if (this.kickStartPosition && this.kickEndPosition) {
-      // Calculate final kick parameters
+    if (this.kickStartPosition && this.kickEndPosition && this.kickStartTime) {
+      // Calculate swipe speed (distance / time)
+      const swipeTime = (performance.now() - this.kickStartTime) / 1000; // Convert to seconds
+      const swipeDistance = this.kickEndPosition.distanceTo(this.kickStartPosition);
+      const swipeSpeed = swipeTime > 0 ? swipeDistance / swipeTime : 0; // pixels per second
+      
+      // Normalize swipe speed (typical swipe: 100-1000 pixels/second)
+      const normalizedSwipeSpeed = Math.min(swipeSpeed / 500, 2.0); // Clamp to 0-2.0
+      
+      // Calculate final kick parameters with swipe speed
       const params = this.calculateKickParameters(
         this.kickEndPosition,
-        this.kickStartPosition
+        this.kickStartPosition,
+        normalizedSwipeSpeed
       );
       
-      // Store kick params - will execute when animation completes
-      this.pendingKickParams = params;
+      // Execute kick immediately - no animation delay
+      if (this.onKickCallback) {
+        this.onKickCallback(params);
+      }
     }
     
     // Reset
     this.kickStartPosition = null;
     this.kickEndPosition = null;
+    this.kickStartTime = null;
   }
 
   /**
    * Check if animation is complete and execute pending kick
+   * (Not used anymore - kicks execute immediately)
    */
   checkAndExecuteKick() {
-    if (this.pendingKickParams && this.player && !this.player.isAnimating) {
-      // Animation complete, execute kick
-      if (this.onKickCallback) {
-        this.onKickCallback(this.pendingKickParams);
-      }
-      this.pendingKickParams = null;
-    }
+    // Kicks now execute immediately on mouse up
+    // This method kept for compatibility but does nothing
   }
 
   /**

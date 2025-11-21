@@ -5,12 +5,13 @@ import * as THREE from 'three';
  * Main game loop coordinator
  */
 export class GameEngine {
-  constructor(renderer, gameLogic, cameraController, sceneManager = null, inputHandler = null) {
+  constructor(renderer, gameLogic, cameraController, sceneManager = null, inputHandler = null, targetManager = null) {
     this.renderer = renderer;
     this.gameLogic = gameLogic;
     this.cameraController = cameraController;
     this.sceneManager = sceneManager;
     this.inputHandler = inputHandler;
+    this.targetManager = targetManager;
     this.isRunning = false;
     this.animationId = null;
     this.lastTime = 0;
@@ -53,6 +54,11 @@ export class GameEngine {
       
       // Update game logic
       this.gameLogic.update(deltaTime);
+      
+      // Update targets animation
+      if (this.targetManager) {
+        this.targetManager.update(deltaTime);
+      }
       
       // Update camera (static - no movement needed, but call for consistency)
       if (this.cameraController) {

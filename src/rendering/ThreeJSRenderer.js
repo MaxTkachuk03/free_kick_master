@@ -19,24 +19,43 @@ export class ThreeJSRenderer {
   init() {
     // Create scene
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xb0e0e6); // Light sky blue background (brighter)
+    this.scene.background = new THREE.Color(0x87ceeb); // Sky blue background (like reference image)
 
-    // Create camera - static view (always shows goal in center)
+    // Create camera - 2.5D isometric view using perspective camera
     const aspect = this.container.clientWidth / this.container.clientHeight;
-    this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+    this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
     
-    // Static camera position - behind player, slightly right, elevated, looking at goal
+    // 3D camera position - at player eye level, looking at ball (center of screen)
     // Camera will be set by CameraController, but set initial position here
-    this.camera.position.set(3, 5, 2); // Behind player, slightly right, elevated
-    this.camera.lookAt(0, 1, 25); // Look at goal (center)
+    // Ball in center, player on left, goal in background
+    this.camera.position.set(0, 1.7, -3); // Behind player, at eye level (1.7m)
+    this.camera.lookAt(0, 0.5, 2); // Look at ball area (center of screen, z=2)
+    
+    console.log('Camera initialized:', {
+      position: this.camera.position,
+      lookAt: new THREE.Vector3(0, 0, 12.5),
+      aspect: aspect
+    });
 
     // Create renderer
+    const canvas = this.container.querySelector('#game-canvas');
+    if (!canvas) {
+      console.error('Canvas element not found!');
+      return;
+    }
+    
     this.renderer = new THREE.WebGLRenderer({
-      canvas: this.container.querySelector('#game-canvas'),
+      canvas: canvas,
       antialias: true
     });
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
+    
+    console.log('Renderer initialized:', {
+      width: this.container.clientWidth,
+      height: this.container.clientHeight,
+      canvas: !!canvas
+    });
 
     // Setup lighting
     this.setupLighting();
@@ -71,10 +90,20 @@ export class ThreeJSRenderer {
   onWindowResize() {
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
+    const aspect = width / height;
 
-    this.camera.aspect = width / height;
+    // Update perspective camera
+    this.camera.aspect = aspect;
     this.camera.updateProjectionMatrix();
+    
     this.renderer.setSize(width, height);
+  }
+
+  /**
+   * Get Three.js scene
+   */
+  getScene() {
+    return this.scene;
   }
 
   /**
@@ -101,6 +130,12 @@ export class ThreeJSRenderer {
   render() {
     if (this.renderer && this.scene && this.camera) {
       this.renderer.render(this.scene, this.camera);
+    } else {
+      console.warn('Renderer, scene, or camera not initialized:', {
+        renderer: !!this.renderer,
+        scene: !!this.scene,
+        camera: !!this.camera
+      });
     }
   }
 

@@ -151,12 +151,16 @@ export class GameHUD {
   updateCoins(coins) {
     const element = document.getElementById('coin-counter');
     if (element) {
+      console.log('💰 HUD: Updating coin counter:', coins, 'Type:', typeof coins);
       element.textContent = coins;
+      console.log('💰 HUD: Coin counter updated to:', element.textContent);
       // Add animation
       element.style.transform = 'scale(1.2)';
       setTimeout(() => {
         element.style.transform = 'scale(1)';
       }, 200);
+    } else {
+      console.error('❌ HUD: Coin counter element not found!');
     }
   }
 
@@ -166,7 +170,11 @@ export class GameHUD {
   updateGoals(goals) {
     const element = document.getElementById('goal-counter');
     if (element) {
+      console.log('Updating goals counter:', goals);
       element.textContent = goals;
+      console.log('Goals counter updated to:', element.textContent);
+    } else {
+      console.error('Goal counter element not found!');
     }
   }
 

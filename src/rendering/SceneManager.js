@@ -19,15 +19,176 @@ export class SceneManager {
   }
 
   /**
-   * Create the game field (bright green grass plane)
+   * Create the game field (bright green grass plane with lines drawn on texture)
    */
   createField() {
-    // Create bright green grass plane (more vibrant like reference)
-    const fieldGeometry = new THREE.PlaneGeometry(40, 60);
+    // Field dimensions: 40m (width) x 60m (length)
+    const fieldWidth = 40;
+    const fieldLength = 60;
+    
+    // Create canvas for field texture with lines
+    const canvas = document.createElement('canvas');
+    const textureSize = 2048; // High resolution for crisp lines
+    canvas.width = textureSize;
+    canvas.height = textureSize;
+    const ctx = canvas.getContext('2d');
+    
+    // Fill with green grass color
+    ctx.fillStyle = '#4a7c59';
+    ctx.fillRect(0, 0, textureSize, textureSize);
+    
+    // Scale factor: convert meters to pixels
+    const scaleX = textureSize / fieldWidth;  // pixels per meter (width)
+    const scaleZ = textureSize / fieldLength; // pixels per meter (length)
+    
+    // Helper function to convert field coordinates to canvas coordinates
+    // Field: X: -20 to +20, Z: -30 to +30
+    // Canvas: X: 0 to textureSize, Y: 0 to textureSize
+    const toCanvasX = (fieldX) => (fieldX + fieldWidth / 2) * scaleX;
+    const toCanvasZ = (fieldZ) => (fieldZ + fieldLength / 2) * scaleZ;
+    
+    // Set line style
+    ctx.strokeStyle = '#ffffff';
+    ctx.fillStyle = '#ffffff';
+    ctx.lineWidth = 3; // Line thickness in pixels
+    
+    // 1. Touch lines (side boundaries)
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(-20), toCanvasZ(-30));
+    ctx.lineTo(toCanvasX(-20), toCanvasZ(30));
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(20), toCanvasZ(-30));
+    ctx.lineTo(toCanvasX(20), toCanvasZ(30));
+    ctx.stroke();
+    
+    // 2. Goal lines (end boundaries)
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(-20), toCanvasZ(-30));
+    ctx.lineTo(toCanvasX(20), toCanvasZ(-30));
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(-20), toCanvasZ(30));
+    ctx.lineTo(toCanvasX(20), toCanvasZ(30));
+    ctx.stroke();
+    
+    // 3. Center line
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(-20), toCanvasZ(0));
+    ctx.lineTo(toCanvasX(20), toCanvasZ(0));
+    ctx.stroke();
+    
+    // 4. Center circle (radius 9.15m)
+    ctx.beginPath();
+    ctx.arc(toCanvasX(0), toCanvasZ(0), 9.15 * scaleX, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // 5. Center spot
+    ctx.beginPath();
+    ctx.arc(toCanvasX(0), toCanvasZ(0), 0.3 * scaleX, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 6. Penalty area at opponent's goal (z = 25)
+    const penaltyAreaDepth = 16.5;
+    const penaltyAreaWidth = 20;
+    const goalZ = 25;
+    
+    // Penalty area rectangle
+    ctx.strokeRect(
+      toCanvasX(-penaltyAreaWidth / 2),
+      toCanvasZ(goalZ - penaltyAreaDepth),
+      penaltyAreaWidth * scaleX,
+      penaltyAreaDepth * scaleZ
+    );
+    
+    // 7. Goal area at opponent's goal (5.5m deep x 10m wide)
+    const goalAreaDepth = 5.5;
+    const goalAreaWidth = 10;
+    
+    ctx.strokeRect(
+      toCanvasX(-goalAreaWidth / 2),
+      toCanvasZ(goalZ - goalAreaDepth),
+      goalAreaWidth * scaleX,
+      goalAreaDepth * scaleZ
+    );
+    
+    // 8. Penalty spot (11m from goal line)
+    ctx.beginPath();
+    ctx.arc(toCanvasX(0), toCanvasZ(goalZ - 11), 0.3 * scaleX, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 9. Penalty arc (semi-circle, radius 9.15m from penalty spot)
+    ctx.beginPath();
+    ctx.arc(toCanvasX(0), toCanvasZ(goalZ - 11), 9.15 * scaleX, 0, Math.PI);
+    ctx.stroke();
+    
+    // 10. Corner arcs (radius 1m)
+    const cornerRadius = 1;
+    const cornerArcSize = Math.PI / 2;
+    
+    // Top-left corner
+    ctx.beginPath();
+    ctx.arc(toCanvasX(-20), toCanvasZ(-30), cornerRadius * scaleX, 0, cornerArcSize);
+    ctx.stroke();
+    
+    // Top-right corner
+    ctx.beginPath();
+    ctx.arc(toCanvasX(20), toCanvasZ(-30), cornerRadius * scaleX, Math.PI / 2, Math.PI);
+    ctx.stroke();
+    
+    // Bottom-left corner
+    ctx.beginPath();
+    ctx.arc(toCanvasX(-20), toCanvasZ(30), cornerRadius * scaleX, -Math.PI / 2, 0);
+    ctx.stroke();
+    
+    // Bottom-right corner
+    ctx.beginPath();
+    ctx.arc(toCanvasX(20), toCanvasZ(30), cornerRadius * scaleX, Math.PI, Math.PI * 1.5);
+    ctx.stroke();
+    
+    // 11. Penalty area for own goal (at z = -25, mirrored)
+    const ownGoalZ = -25;
+    
+    // Penalty area rectangle
+    ctx.strokeRect(
+      toCanvasX(-penaltyAreaWidth / 2),
+      toCanvasZ(ownGoalZ),
+      penaltyAreaWidth * scaleX,
+      penaltyAreaDepth * scaleZ
+    );
+    
+    // Goal area for own goal
+    ctx.strokeRect(
+      toCanvasX(-goalAreaWidth / 2),
+      toCanvasZ(ownGoalZ),
+      goalAreaWidth * scaleX,
+      goalAreaDepth * scaleZ
+    );
+    
+    // Penalty spot for own goal
+    ctx.beginPath();
+    ctx.arc(toCanvasX(0), toCanvasZ(ownGoalZ + 11), 0.3 * scaleX, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Penalty arc for own goal
+    ctx.beginPath();
+    ctx.arc(toCanvasX(0), toCanvasZ(ownGoalZ + 11), 9.15 * scaleX, Math.PI, 0);
+    ctx.stroke();
+    
+    // Create texture from canvas
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.needsUpdate = true;
+    
+    // Create field with texture
+    const fieldGeometry = new THREE.PlaneGeometry(fieldWidth, fieldLength);
     const fieldMaterial = new THREE.MeshStandardMaterial({
-      color: 0x3a9d3a, // Brighter, more vibrant green
-      roughness: 0.8,
-      metalness: 0.1
+      map: texture,
+      roughness: 0.9,
+      metalness: 0.0
     });
     
     this.field = new THREE.Mesh(fieldGeometry, fieldMaterial);
@@ -40,54 +201,13 @@ export class SceneManager {
   }
 
   /**
-   * Create white field lines
+   * Create white field lines (now drawn on field texture, not as 3D objects)
+   * This method is kept for compatibility but does nothing
    */
   createFieldLines() {
+    // Lines are now drawn directly on the field texture in createField()
+    // No need to create separate 3D objects
     const linesGroup = new THREE.Group();
-    
-    // Center line
-    const centerLineGeometry = new THREE.BoxGeometry(40, 0.1, 0.2);
-    const lineMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
-    const centerLine = new THREE.Mesh(centerLineGeometry, lineMaterial);
-    centerLine.rotation.x = -Math.PI / 2;
-    centerLine.position.y = 0.01;
-    linesGroup.add(centerLine);
-
-    // Center circle
-    const circleGeometry = new THREE.RingGeometry(9, 9.2, 64);
-    const circleMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xffffff,
-      side: THREE.DoubleSide
-    });
-    const circle = new THREE.Mesh(circleGeometry, circleMaterial);
-    circle.rotation.x = -Math.PI / 2;
-    circle.position.y = 0.01;
-    linesGroup.add(circle);
-
-    // Penalty area lines (simplified)
-    const penaltyAreaGeometry = new THREE.BoxGeometry(16, 0.1, 0.2);
-    
-    // Left penalty area
-    const leftPenalty = new THREE.Mesh(penaltyAreaGeometry, lineMaterial);
-    leftPenalty.rotation.x = -Math.PI / 2;
-    leftPenalty.rotation.z = Math.PI / 2;
-    leftPenalty.position.set(-28, 0.01, 0);
-    linesGroup.add(leftPenalty);
-
-    // Right penalty area
-    const rightPenalty = new THREE.Mesh(penaltyAreaGeometry, lineMaterial);
-    rightPenalty.rotation.x = -Math.PI / 2;
-    rightPenalty.rotation.z = Math.PI / 2;
-    rightPenalty.position.set(28, 0.01, 0);
-    linesGroup.add(rightPenalty);
-
-    // Penalty arc (semi-circle) - visible in foreground
-    const arcGeometry = new THREE.RingGeometry(9, 9.2, 64, 1, 0, Math.PI);
-    const arc = new THREE.Mesh(arcGeometry, circleMaterial);
-    arc.rotation.x = -Math.PI / 2;
-    arc.position.set(0, 0.01, 25); // Near goal
-    linesGroup.add(arc);
-
     this.fieldLines = linesGroup;
     this.renderer.addObject(linesGroup);
     return linesGroup;

@@ -45,13 +45,29 @@ export class ResultsScreen {
     if (!this.element) return;
 
     const { goals, misses, coins, totalCoins } = results;
-    const progress = this.stateManager.getProgress();
+    
+    // Determine win/loss: 3+ goals = victory
+    const isVictory = goals >= 3;
     const nextLevel = levelId + 1;
-    const hasNextLevel = nextLevel <= 5 && progress.unlockedLevels.includes(nextLevel);
+    const hasNextLevel = nextLevel <= 5;
+    
+    // Unlock next level if victory
+    if (isVictory && hasNextLevel) {
+      this.stateManager.unlockLevel(nextLevel);
+    }
+
+    const title = isVictory ? '🎉 Перемога!' : '😔 Поразка';
+    const titleColor = isVictory ? '#4CAF50' : '#f44336';
+    const bgGradient = isVictory 
+      ? 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)'
+      : 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)';
+    const message = isVictory 
+      ? `Вітаємо! Ви забили ${goals} голів і пройшли рівень!`
+      : `Ви забили ${goals} голів. Для перемоги потрібно мінімум 3 голи.`;
 
     this.element.innerHTML = `
       <div class="results-content" style="
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: ${bgGradient};
         border-radius: 20px;
         padding: clamp(20px, 4vh, 40px);
         max-width: 600px;
@@ -64,14 +80,24 @@ export class ResultsScreen {
         margin: max(20px, 5vh) auto;
       ">
         <h1 style="
-          font-size: clamp(28px, 6vw, 48px);
-          margin-bottom: clamp(20px, 3vh, 30px);
+          font-size: clamp(32px, 7vw, 56px);
+          margin-bottom: clamp(15px, 2vh, 20px);
           text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        ">Рівень ${levelId} завершено!</h1>
+          color: ${titleColor};
+        ">${title}</h1>
+        
+        <p style="
+          font-size: clamp(18px, 4vw, 22px);
+          margin-bottom: clamp(20px, 3vh, 30px);
+          opacity: 0.95;
+        ">${message}</p>
         
         <div class="stats" style="
           margin-bottom: clamp(20px, 3vh, 30px);
           font-size: clamp(18px, 4vw, 24px);
+          background: rgba(0, 0, 0, 0.2);
+          padding: clamp(15px, 3vh, 25px);
+          border-radius: 12px;
         ">
           <div style="margin-bottom: 15px;">
             <span style="color: #4CAF50; font-weight: bold;">Голи:</span> ${goals}
@@ -99,7 +125,7 @@ export class ResultsScreen {
           justify-content: center;
           flex-wrap: wrap;
         ">
-          ${hasNextLevel ? `
+          ${isVictory && hasNextLevel ? `
             <button class="result-button" data-action="next" style="
               padding: clamp(12px, 2.5vh, 15px) clamp(25px, 5vw, 30px);
               font-size: clamp(16px, 3.5vw, 20px);
@@ -113,22 +139,24 @@ export class ResultsScreen {
             ">Наступний рівень</button>
           ` : ''}
           
-          <button class="result-button" data-action="retry" style="
-            padding: clamp(12px, 2.5vh, 15px) clamp(25px, 5vw, 30px);
-            font-size: clamp(16px, 3.5vw, 20px);
-            background: #2196F3;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-          ">Повторити</button>
+          ${!isVictory ? `
+            <button class="result-button" data-action="retry" style="
+              padding: clamp(12px, 2.5vh, 15px) clamp(25px, 5vw, 30px);
+              font-size: clamp(16px, 3.5vw, 20px);
+              background: #2196F3;
+              color: white;
+              border: none;
+              border-radius: 12px;
+              cursor: pointer;
+              font-weight: bold;
+              transition: all 0.3s;
+            ">Спробувати знову</button>
+          ` : ''}
           
           <button class="result-button" data-action="menu" style="
             padding: clamp(12px, 2.5vh, 15px) clamp(25px, 5vw, 30px);
             font-size: clamp(16px, 3.5vw, 20px);
-            background: #f44336;
+            background: #757575;
             color: white;
             border: none;
             border-radius: 12px;

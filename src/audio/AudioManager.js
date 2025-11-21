@@ -10,7 +10,7 @@ export class AudioManager {
     this.masterVolume = 1.0;
     this.soundVolume = 1.0;
     this.musicVolume = 0.5;
-    this.musicEnabled = true;
+    this.musicEnabled = false; // Music disabled
     this.soundsEnabled = true;
     
     // Initialize audio context (for better control)
@@ -122,6 +122,13 @@ export class AudioManager {
       return;
     }
     
+    // Check if game is active - don't play music during gameplay
+    const hud = document.getElementById('game-hud');
+    if (hud && hud.style.display !== 'none') {
+      console.log('Game is active, music will not play');
+      return;
+    }
+    
     // Stop current music if playing
     this.stopMusic();
     
@@ -173,6 +180,13 @@ export class AudioManager {
    * Resume music if it was blocked by autoplay policy
    */
   resumeMusic() {
+    // Don't resume music if game is active
+    const hud = document.getElementById('game-hud');
+    if (hud && hud.style.display !== 'none') {
+      console.log('Game is active, music will not resume');
+      return;
+    }
+    
     if (this.music && this.musicAudio && this.musicEnabled) {
       if (this.musicAudio.paused) {
         console.log('Resuming paused music...');
@@ -209,8 +223,13 @@ export class AudioManager {
     if (this.musicAudio) {
       this.musicAudio.pause();
       this.musicAudio.currentTime = 0;
+      // Remove all event listeners to prevent any callbacks
+      this.musicAudio.onplay = null;
+      this.musicAudio.onpause = null;
+      this.musicAudio.onended = null;
       this.musicAudio = null;
       this.music = null;
+      console.log('Music stopped');
     }
   }
 

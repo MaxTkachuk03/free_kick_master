@@ -73,8 +73,6 @@ export class LevelSelect {
           ${levels.map(levelId => {
             const isUnlocked = progress.unlockedLevels.includes(levelId);
             const isCompleted = progress.completedLevels.includes(levelId);
-            const stats = this.stateManager.getLevelStats(levelId);
-            const coins = stats.coins || 0;
 
             return `
               <div class="level-card" data-level="${levelId}" style="
@@ -108,14 +106,6 @@ export class LevelSelect {
                   color: ${isCompleted ? '#4CAF50' : '#ccc'};
                 ">
                   ${isCompleted ? '✓ Завершено' : isUnlocked ? 'Доступно' : 'Заблоковано'}
-                </div>
-                
-                <div style="
-                  font-size: clamp(14px, 3vw, 18px);
-                  color: #ffd700;
-                  font-weight: bold;
-                ">
-                  ${coins} монет
                 </div>
               </div>
             `;

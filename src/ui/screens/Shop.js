@@ -208,7 +208,7 @@ export class Shop {
         <div style="
           width: 80px;
           height: 80px;
-          background: ${this.getColorHex(uniform.color)};
+          background: ${this.getColorHex(uniform.jerseyColor || uniform.color || 0xffffff)};
           border-radius: 50%;
           margin: 0 auto 15px;
           border: 3px solid white;
@@ -345,7 +345,12 @@ export class Shop {
    * Get color hex string
    */
   getColorHex(color) {
-    return '#' + color.toString(16).padStart(6, '0');
+    if (color === undefined || color === null) {
+      return '#ffffff'; // Default white
+    }
+    // Handle both number and string
+    const colorNum = typeof color === 'number' ? color : parseInt(color, 16);
+    return '#' + colorNum.toString(16).padStart(6, '0');
   }
 
   /**
@@ -374,8 +379,16 @@ export class Shop {
     let success;
     if (type === 'uniform') {
       success = this.shopManager.selectUniform(itemId);
-    } else {
+      // Apply uniform to player if callback is available
+      if (success && this.applyUniformToPlayer) {
+        this.applyUniformToPlayer(itemId);
+      }
+    } else if (type === 'ball') {
       success = this.shopManager.selectBall(itemId);
+      // Apply ball style to game ball if callback is available
+      if (success && this.applyBallToGame) {
+        this.applyBallToGame(itemId);
+      }
     }
 
     if (success) {

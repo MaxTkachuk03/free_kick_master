@@ -73,6 +73,37 @@ free_kick_master/
 - [Product Requirements Document](./docs/prd.md)
 - [Architecture Document](./docs/architecture.md)
 
+## Деплой
+
+### GitHub Pages (автоматичний)
+
+Проєкт налаштований для автоматичного деплою на GitHub Pages через GitHub Actions.
+
+1. Увімкніть GitHub Pages в налаштуваннях репозиторію:
+   - Settings → Pages
+   - Source: GitHub Actions
+
+2. Після push в `main` або `master` гілку, GitHub Actions автоматично збере проєкт і задеплоїть його.
+
+3. Гра буде доступна за адресою: `https://<username>.github.io/<repo-name>/`
+
+### Ручний деплой
+
+```bash
+# Зібрати проєкт
+npm run build
+
+# Файли будуть в папці dist/
+# Завантажте вміст папки dist/ на ваш хостинг
+```
+
+### Інші платформи
+
+Проєкт можна задеплоїти на:
+- **Vercel**: `vercel --prod`
+- **Netlify**: перетягніть папку `dist/` в Netlify Drop
+- **Cloudflare Pages**: підключіть репозиторій або завантажте `dist/`
+
 ## Ліцензія
 
 MIT

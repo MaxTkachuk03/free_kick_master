@@ -66,8 +66,15 @@ export class StateManager {
    * Update coin balance
    */
   updateCoins(amount) {
+    const coinsBefore = this.state.coins;
     this.state.coins = Math.max(0, this.state.coins + amount);
     this.saveState();
+    console.log('💰 StateManager.updateCoins:', {
+      amount: amount,
+      before: coinsBefore,
+      after: this.state.coins,
+      saved: this.state.coins
+    });
     return this.state.coins;
   }
 
