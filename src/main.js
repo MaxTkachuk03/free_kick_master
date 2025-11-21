@@ -561,36 +561,44 @@ document.addEventListener('DOMContentLoaded', () => {
       // Play coin sound for completion bonus
       audioManager.playSound('coin');
       
-      // Hide HUD
+      // Hide HUD first
+      if (uiManager.screens['hud']) {
+        uiManager.screens['hud'].hide();
+      }
       uiManager.hideCurrentScreen();
       console.log('✅ HUD hidden');
       
-      // Show results screen (music will be stopped automatically via showScreen override)
-      const resultsScreen = uiManager.screens['results'];
-      if (resultsScreen) {
-        const finalCoins = stateManager ? stateManager.getCoins() : score.coins;
-        console.log('✅✅✅ Showing results screen:', {
-          level: currentLevel,
-          goals: score.goals,
-          misses: score.misses,
-          coins: score.coins,
-          totalCoins: finalCoins
-        });
-        
-        // Use uiManager.showScreen to properly show the results screen
-        uiManager.showScreen('results');
-        
-        resultsScreen.show(currentLevel, {
-          goals: score.goals,
-          misses: score.misses,
-          coins: score.coins,
-          totalCoins: finalCoins
-        });
-        console.log('✅✅✅ Results screen shown and displayed!');
-      } else {
-        console.error('❌❌❌ Results screen not found in uiManager.screens!');
-        console.error('Available screens:', Object.keys(uiManager.screens || {}));
-      }
+      // Small delay to ensure HUD is hidden before showing results
+      setTimeout(() => {
+        // Show results screen as dialog
+        const resultsScreen = uiManager.screens['results'];
+        if (resultsScreen) {
+          const finalCoins = stateManager ? stateManager.getCoins() : score.coins;
+          console.log('✅✅✅ Showing results dialog after 5 kicks:', {
+            level: currentLevel,
+            goals: score.goals,
+            misses: score.misses,
+            coins: score.coins,
+            totalCoins: finalCoins
+          });
+          
+          // Show results screen directly (it's a modal dialog)
+          resultsScreen.show(currentLevel, {
+            goals: score.goals,
+            misses: score.misses,
+            coins: score.coins,
+            totalCoins: finalCoins
+          });
+          
+          // Also register it in uiManager for proper tracking
+          uiManager.currentScreen = 'results';
+          
+          console.log('✅✅✅ Results dialog shown and displayed!');
+        } else {
+          console.error('❌❌❌ Results screen not found in uiManager.screens!');
+          console.error('Available screens:', Object.keys(uiManager.screens || {}));
+        }
+      }, 300); // Small delay to ensure smooth transition
     });
 
     // Create and register UI screens

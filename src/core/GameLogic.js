@@ -745,7 +745,13 @@ export class GameLogic {
       });
       // Don't reset ball position - level is complete
       // Complete level immediately
-      this.onLevelComplete();
+      // Call completeLevel immediately (it will handle stopping the game)
+      console.log('⏱️ Calling completeLevel immediately...');
+      if (typeof this.completeLevel === 'function') {
+        this.completeLevel();
+      } else {
+        console.error('❌ completeLevel is not a function!', typeof this.completeLevel);
+      }
       return;
     }
     
@@ -818,25 +824,27 @@ export class GameLogic {
   /**
    * Handle level completion
    */
-  onLevelComplete() {
+  completeLevel() {
+    console.log('🎯🎯🎯 completeLevel() method called! 🎯🎯🎯', {
+      currentKick: this.currentKick,
+      totalKicks: this.totalKicks,
+      kicksRemaining: this.kicksRemaining,
+      score: { ...this.score },
+      callbackSet: !!this.onLevelCompleteCallback
+    });
+    
     // Prevent multiple calls
     if (this.kicksRemaining < 0) {
       console.log('⚠️ Level already completed, ignoring duplicate call');
       return;
     }
     
-    console.log('🎯🎯🎯 onLevelComplete() called! 🎯🎯🎯', {
-      currentKick: this.currentKick,
-      totalKicks: this.totalKicks,
-      kicksRemaining: this.kicksRemaining,
-      score: { ...this.score }
-    });
-    
-    // Mark as complete (set to -1 to prevent further kicks)
+    // Mark as complete (set to -1 to prevent further kicks) IMMEDIATELY
     this.kicksRemaining = -1;
     
     // Stop ball movement
     this.stopBall();
+    this.isBallMoving = false; // Ensure ball is stopped
     
     // Add completion bonus
     this.score.coins += 5; // 5 coins bonus for completing level
@@ -847,6 +855,7 @@ export class GameLogic {
       finalScore: { ...this.score }
     });
     
+    // Call callback to show results dialog
     if (this.onLevelCompleteCallback) {
       console.log('✅✅✅ Calling onLevelCompleteCallback with score:', this.score);
       try {
@@ -854,9 +863,16 @@ export class GameLogic {
         console.log('✅✅✅ onLevelCompleteCallback executed successfully!');
       } catch (error) {
         console.error('❌❌❌ Error in onLevelCompleteCallback:', error);
+        console.error('Error stack:', error.stack);
       }
     } else {
       console.error('❌❌❌ onLevelCompleteCallback is not set! Results screen will not show!');
+      console.error('Available callbacks:', {
+        onKickCompleteCallback: !!this.onKickCompleteCallback,
+        onGoalCallback: !!this.onGoalCallback,
+        onMissCallback: !!this.onMissCallback,
+        onLevelCompleteCallback: !!this.onLevelCompleteCallback
+      });
     }
   }
 

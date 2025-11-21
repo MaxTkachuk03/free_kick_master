@@ -21,17 +21,18 @@ export class ResultsScreen {
     this.element.id = 'results-screen';
     this.element.className = 'screen';
     this.element.style.cssText = `
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
       align-items: center;
       justify-content: center;
       pointer-events: all;
-      z-index: 1002;
+      z-index: 10000;
+      backdrop-filter: blur(5px);
     `;
 
     this.container.appendChild(this.element);
@@ -200,6 +201,7 @@ export class ResultsScreen {
     });
 
     this.element.style.display = 'flex';
+    console.log('✅ Results screen displayed as dialog');
   }
 
   /**
@@ -208,6 +210,7 @@ export class ResultsScreen {
   hide() {
     if (this.element) {
       this.element.style.display = 'none';
+      console.log('✅ Results screen hidden');
     }
   }
 
