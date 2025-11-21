@@ -6,16 +6,12 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    sourcemap: true,
-    rollupOptions: {
-      input: {
-        main: './public/index.html'
-      }
-    }
+    sourcemap: true
   },
   server: {
     port: 3000,
-    open: true
+    open: true,
+    host: true
   }
 });
 
