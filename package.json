@@ -1,0 +1,29 @@
+{
+  "name": "free-kick-master",
+  "version": "1.0.0",
+  "description": "Free Kick Master - Browser-based 3D football arcade game",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest"
+  },
+  "keywords": [
+    "game",
+    "football",
+    "3d",
+    "threejs",
+    "browser-game"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}
+
